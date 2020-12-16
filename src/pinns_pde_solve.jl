@@ -21,8 +21,8 @@ struct PhysicsInformedNN{C,P,PR,PH,DER,T,K}
 end
 
 function PhysicsInformedNN(chain,
+                           init_params;
                            init_hyperparams = nothing,
-                           init_params = nothing;
                            _phi = nothing,
                            _derivative = nothing,
                            strategy = GridTraining(),
@@ -720,6 +720,8 @@ function DiffEqBase.discretize(pde_system::PDESystem, discretization::PhysicsInf
 
     chain = discretization.chain
     initθ = discretization.initθ
+
+    initp = discretization.initp
 
     flat_initθ = vcat(initθ...,initp)
 
