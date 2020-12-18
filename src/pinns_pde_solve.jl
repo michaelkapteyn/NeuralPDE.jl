@@ -277,56 +277,7 @@ function build_symbolic_loss_function(eqs,_indvars,_depvars, phi, derivative,ini
                                         phi, derivative,initθ,
                                         bc_indvars = bc_indvars)
 end
-# function build_symbolic_loss_function(eqs,indvars,depvars,
-#                                       dict_indvars,dict_depvars,
-#                                       phi, derivative, initθ;
-#                                       bc_indvars = indvars)
-#     if !(eqs isa Array)
-#         eqs = [eqs]
-#     end
-#     loss_functions= Expr[]
-#     for eq in eqs
-#         push!(loss_functions,parse_equation(eq,dict_indvars,dict_depvars))
-#     end
-#
-#     vars = :(cord, $θ, phi, derivative,u)
-#     ex = Expr(:block)
-#     if length(depvars) != 1
-#         θ_nums = Symbol[]
-#         phi_nums = Symbol[]
-#         for v in depvars
-#             num = dict_depvars[v]
-#             push!(θ_nums,:($(Symbol(:($θ),num))))
-#             push!(phi_nums,:($(Symbol(:phi,num))))
-#         end
-#
-#         expr_θ = Expr[]
-#         expr_phi = Expr[]
-#
-#         acum =  [0;accumulate(+, length.(initθ))]
-#         sep = [acum[i]+1 : acum[i+1] for i in 1:length(acum)-1]
-#
-#         for i in eachindex(depvars)
-#             push!(expr_θ, :($θ[$(sep[i])]))
-#             push!(expr_phi, :(phi[$i]))
-#         end
-#
-#         vars_θ = Expr(:(=), build_expr(:tuple, θ_nums), build_expr(:tuple, expr_θ))
-#         push!(ex.args,  vars_θ)
-#
-#         vars_phi = Expr(:(=), build_expr(:tuple, phi_nums), build_expr(:tuple, expr_phi))
-#         push!(ex.args,  vars_phi)
-#     end
-#     indvars_ex = [:($:cord[$i]) for (i, u) ∈ enumerate(bc_indvars)]
-#
-#     left_arg_pairs, right_arg_pairs = bc_indvars,indvars_ex
-#
-#     vars_eq = Expr(:(=), build_expr(:tuple, left_arg_pairs), build_expr(:tuple, [right_arg_pairs;:θ[1]]))
-#     let_ex = Expr(:let, vars_eq, build_expr(:vect, loss_functions))
-#     push!(ex.args,  let_ex)
-#
-#     expr_loss_function = :(($vars) -> begin $ex end)
-# end
+
 
 function build_symbolic_loss_function(eqs,indvars,depvars, paramvars,
                                       dict_indvars,dict_depvars, dict_paramvars,
@@ -755,10 +706,13 @@ function DiffEqBase.discretize(pde_system::PDESystem, discretization::PhysicsInf
         bc_loss_function =get_loss_function(_bc_loss_functions,
                                                        bcs_train_set,
                                                        strategy, length(paramvars))
-
-        int_loss_function = NeuralPDE.get_interior_loss_function(phi,
-                                                   training_data,
-                                                   strategy, length(paramvars))
+        if length(training_data) > 0
+            int_loss_function = NeuralPDE.get_interior_loss_function(phi,
+                                                       training_data,
+                                                       strategy, length(paramvars))
+        else
+            int_loss_function = nothing
+        end
         (pde_loss_function, bc_loss_function, int_loss_function)
     elseif strategy isa StochasticTraining
           bounds = get_bounds(domains,bcs,dict_indvars,dict_depvars)
